@@ -195,7 +195,7 @@ Additional MCPs can be assigned dynamically from the **CoStaff dashboard** under
   "name": "database-agent",
   "version": "0.1.0",
   "description": "資料庫管理專家，支援多種資料庫連線、自動探索 Schema 並執行跨庫查詢與分析。",
-  "a2a_service": "database-agent",
+  "a2a_service": "agent-database",
   "port": 8081,
   "env_required": ["GOOGLE_API_KEY", "DATABASE_CONFIG"],
   "mcp_configurable": true,
