@@ -1,0 +1,7 @@
+mcp[cli]
+fastmcp
+sqlalchemy
+psycopg2-binary
+pymysql
+cryptography
+pandas

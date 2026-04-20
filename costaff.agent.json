@@ -1,0 +1,22 @@
+{
+  "name": "database-agent",
+  "version": "0.1.0",
+  "description": "資料庫管理專家，支援多種資料庫連線、自動探索 Schema 並執行跨庫查詢與分析。",
+  "a2a_service": "database-agent",
+  "port": 8081,
+  "env_required": [
+    "GOOGLE_API_KEY",
+    "DATABASE_CONFIG"
+  ],
+  "env_optional": [
+    "DATABASE_AGENT_MODEL",
+    "COSTAFF_AGENT_MODEL_PROVIDER",
+    "LITELLM_MODEL_NAME",
+    "LITELLM_API_BASE",
+    "LITELLM_API_KEY",
+    "DATABASE_AGENT_MCP_URLS"
+  ],
+  "health_path": "/.well-known/agent.json",
+  "mcp_configurable": true,
+  "mcp_env_var": "DATABASE_AGENT_MCP_URLS"
+}
