@@ -17,7 +17,7 @@ from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPServerPa
 from utils.instructions import AGENT_INSTRUCTION
 
 # Workspace for DB results
-WORKSPACE_DIR = os.getenv("DATABASE_WORKSPACE_DIR", "/app/data/workspace")
+WORKSPACE_DIR = os.getenv("AGENT_DATABASE_WORKSPACE_DIR", "/app/data/agent-database")
 
 # Connect to own MCP
 MCP_DATABASE_URL = os.getenv("MCP_DATABASE_URL", "http://costaff-mcp-database:8082/mcp")

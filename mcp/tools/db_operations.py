@@ -13,7 +13,7 @@ def _get_db_config():
         return {}
 
 def _workspace():
-    return os.getenv("DATABASE_WORKSPACE_DIR", "/app/data/workspace")
+    return os.getenv("AGENT_DATABASE_WORKSPACE_DIR", "/app/data/agent-database")
 
 def get_connected_databases() -> str:
     """

@@ -11,7 +11,7 @@ logger = logging.getLogger("mcp-database")
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-WORKSPACE = os.getenv("DATABASE_WORKSPACE_DIR", "/app/data/workspace")
+WORKSPACE = os.getenv("AGENT_DATABASE_WORKSPACE_DIR", "/app/data/agent-database")
 os.makedirs(WORKSPACE, exist_ok=True)
 
 from mcp.server.fastmcp import FastMCP

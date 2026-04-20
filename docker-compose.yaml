@@ -8,7 +8,8 @@ services:
       - PORT=8081
       - PUBLIC_HOST=costaff-agent-database
       - MCP_DATABASE_URL=http://costaff-mcp-database:8082/mcp
-      - DATABASE_WORKSPACE_DIR=/app/data/agent-database
+      - WORKSPACE_DIR=/app/data
+      - AGENT_DATABASE_WORKSPACE_DIR=/app/data/agent-database
       - COSTAFF_AGENT_MODEL_PROVIDER=${COSTAFF_AGENT_MODEL_PROVIDER:-gemini}
       - DATABASE_AGENT_MODEL=${DATABASE_AGENT_MODEL:-gemini-2.5-flash}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
@@ -27,7 +28,8 @@ services:
     restart: on-failure
     environment:
       - MCP_DATABASE_PORT=8082
-      - DATABASE_WORKSPACE_DIR=/app/data/agent-database
+      - WORKSPACE_DIR=/app/data
+      - AGENT_DATABASE_WORKSPACE_DIR=/app/data/agent-database
       - DATABASE_CONFIG=${DATABASE_CONFIG}
     volumes:
       - costaff_data:/app/data
