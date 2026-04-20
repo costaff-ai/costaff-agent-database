@@ -20,7 +20,7 @@ from utils.instructions import AGENT_INSTRUCTION
 WORKSPACE_DIR = os.getenv("DATABASE_WORKSPACE_DIR", "/app/data/workspace")
 
 # Connect to own MCP
-MCP_DATABASE_URL = os.getenv("MCP_TEMPLATE_URL", "http://mcp-database:8082/mcp")
+MCP_DATABASE_URL = os.getenv("MCP_DATABASE_URL", "http://costaff-mcp-database:8082/mcp")
 tools = [McpToolset(connection_params=StreamableHTTPServerParams(url=MCP_DATABASE_URL))]
 logger.info(f"Database MCP URL: {MCP_DATABASE_URL}")
 

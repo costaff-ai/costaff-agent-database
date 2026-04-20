@@ -7,7 +7,7 @@ services:
     environment:
       - PORT=8081
       - PUBLIC_HOST=database-agent
-      - MCP_TEMPLATE_URL=http://mcp-database:8082/mcp
+      - MCP_DATABASE_URL=http://costaff-mcp-database:8082/mcp
       - DATABASE_WORKSPACE_DIR=/app/data/workspace
       - COSTAFF_AGENT_MODEL_PROVIDER=${COSTAFF_AGENT_MODEL_PROVIDER:-gemini}
       - DATABASE_AGENT_MODEL=${DATABASE_AGENT_MODEL:-gemini-2.5-flash}
@@ -18,9 +18,9 @@ services:
     volumes:
       - database_data:/app/data
     depends_on:
-      - mcp-database
+      - costaff-mcp-database
 
-  mcp-database:
+  costaff-mcp-database:
     build:
       context: ./mcp
     container_name: costaff-mcp-database
