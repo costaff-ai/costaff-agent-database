@@ -16,7 +16,7 @@ services:
       - LITELLM_API_BASE=${LITELLM_API_BASE:-}
       - LITELLM_API_KEY=${LITELLM_API_KEY:-}
     volumes:
-      - database_data:/app/data
+      - costaff_data:/app/data
     depends_on:
       - costaff-mcp-database
 
@@ -30,7 +30,8 @@ services:
       - DATABASE_WORKSPACE_DIR=/app/data/workspace
       - DATABASE_CONFIG=${DATABASE_CONFIG}
     volumes:
-      - database_data:/app/data
+      - costaff_data:/app/data
 
 volumes:
-  database_data:
+  costaff_data:
+    name: costaff_data
