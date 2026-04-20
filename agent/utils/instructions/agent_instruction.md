@@ -51,4 +51,4 @@ I am **Database Agent**, a background specialist sub-agent invoked by `costaff_a
 ## Output Language
 
 - Internal reasoning: **English**
-- All responses to the user: **Traditional Chinese (繁體中文)**
+- All responses to the user: **{PREFERRED_LANGUAGE}**
