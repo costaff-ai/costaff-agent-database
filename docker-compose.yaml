@@ -6,7 +6,7 @@ services:
     restart: on-failure
     environment:
       - PORT=8081
-      - PUBLIC_HOST=database-agent
+      - PUBLIC_HOST=costaff-agent-database
       - MCP_DATABASE_URL=http://costaff-mcp-database:8082/mcp
       - DATABASE_WORKSPACE_DIR=/app/data/workspace
       - COSTAFF_AGENT_MODEL_PROVIDER=${COSTAFF_AGENT_MODEL_PROVIDER:-gemini}

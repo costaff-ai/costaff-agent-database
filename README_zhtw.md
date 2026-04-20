@@ -175,7 +175,7 @@ cst agent deploy --local /path/to/costaff-agent-database
 
 ## MCP 擴充
 
-可從 **CoStaff 後台** 的 `Agents → database-agent → MCP Extensions → Apply & Restart` 動態新增額外 MCP 伺服器，無需重新部署。
+可從 **CoStaff 後台** 的 `Agents → costaff-agent-database → MCP Extensions → Apply & Restart` 動態新增額外 MCP 伺服器，無需重新部署。
 
 ```json
 {
@@ -192,7 +192,7 @@ cst agent deploy --local /path/to/costaff-agent-database
 
 ```json
 {
-  "name": "database-agent",
+  "name": "costaff-agent-database",
   "version": "0.1.0",
   "description": "資料庫管理專家，支援多種資料庫連線、自動探索 Schema 並執行跨庫查詢與分析。",
   "a2a_service": "agent-database",

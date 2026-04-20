@@ -175,7 +175,7 @@ Any [SQLAlchemy-supported dialect](https://docs.sqlalchemy.org/en/20/dialects/) 
 
 ## MCP Extensions
 
-Additional MCPs can be assigned dynamically from the **CoStaff dashboard** under `Agents → database-agent → MCP Extensions → Apply & Restart`.
+Additional MCPs can be assigned dynamically from the **CoStaff dashboard** under `Agents → costaff-agent-database → MCP Extensions → Apply & Restart`.
 
 ```json
 {
@@ -192,7 +192,7 @@ Additional MCPs can be assigned dynamically from the **CoStaff dashboard** under
 
 ```json
 {
-  "name": "database-agent",
+  "name": "costaff-agent-database",
   "version": "0.1.0",
   "description": "資料庫管理專家，支援多種資料庫連線、自動探索 Schema 並執行跨庫查詢與分析。",
   "a2a_service": "agent-database",
