@@ -95,8 +95,8 @@ costaff-agent-database/
 ### 獨立部署
 
 ```bash
-git clone https://github.com/costaff-ai/costaff-database-agent.git
-cd costaff-database-agent
+git clone https://github.com/costaff-ai/costaff-agent-database.git
+cd costaff-agent-database
 
 # 設定環境變數
 cat > .env <<EOF
@@ -112,7 +112,7 @@ Agent 將可於 `http://localhost:8081` 存取。
 ### 透過 CoStaff 平台部署
 
 ```bash
-cst agent deploy --local /path/to/costaff-database-agent
+cst agent deploy --local /path/to/costaff-agent-database
 ```
 
 ---

@@ -95,8 +95,8 @@ costaff-agent-database/
 ### Standalone
 
 ```bash
-git clone https://github.com/costaff-ai/costaff-database-agent.git
-cd costaff-database-agent
+git clone https://github.com/costaff-ai/costaff-agent-database.git
+cd costaff-agent-database
 
 # Configure environment
 cat > .env <<EOF
@@ -112,7 +112,7 @@ The agent will be available at `http://localhost:8081`.
 ### Via CoStaff Platform
 
 ```bash
-cst agent deploy --local /path/to/costaff-database-agent
+cst agent deploy --local /path/to/costaff-agent-database
 ```
 
 ---

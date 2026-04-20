@@ -1,8 +1,8 @@
 services:
-  database-agent:
+  agent-database:
     build:
       context: ./agent
-    container_name: costaff-database-agent
+    container_name: costaff-agent-database
     restart: on-failure
     environment:
       - PORT=8081
