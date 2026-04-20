@@ -8,15 +8,18 @@
     "GOOGLE_API_KEY",
     "DATABASE_CONFIG"
   ],
-  "env_optional": [
-    "DATABASE_AGENT_MODEL",
+  "env_optional": [],
+  "env_shared": [
+    "GOOGLE_API_KEY",
     "COSTAFF_AGENT_MODEL_PROVIDER",
     "LITELLM_MODEL_NAME",
     "LITELLM_API_BASE",
-    "LITELLM_API_KEY",
-    "DATABASE_AGENT_MCP_URLS",
-    "COSTAFF_PREFERRED_LANGUAGE"
+    "LITELLM_API_KEY"
   ],
+  "env_auto": [
+    "DATABASE_AGENT_MCP_URLS"
+  ],
+  "model_env_var": "DATABASE_AGENT_MODEL",
   "health_path": "/.well-known/agent.json",
   "mcp_configurable": true,
   "mcp_env_var": "DATABASE_AGENT_MCP_URLS"

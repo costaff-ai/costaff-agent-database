@@ -1,25 +1,29 @@
-# CoStaff Agent Template
+# CoStaff Database Agent
 
 [![Python Version](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/)
 [![Google ADK](https://img.shields.io/badge/Google%20ADK-latest-orange.svg)](https://github.com/google/adk-python)
 [![MCP](https://img.shields.io/badge/MCP-enabled-green.svg)](https://modelcontextprotocol.io/)
 [![Docker](https://img.shields.io/badge/docker-supported-blue.svg)](https://www.docker.com/)
 [![A2A Protocol](https://img.shields.io/badge/A2A-protocol-violet.svg)](https://github.com/google/A2A)
-[![costaff.agent.json](https://img.shields.io/badge/costaff-compatible-blue.svg)](https://github.com/CoStaffAI/costaff)
+[![costaff.agent.json](https://img.shields.io/badge/costaff-compatible-blue.svg)](https://github.com/costaff-ai/costaff)
 
 [繁體中文](./README_zhtw.md) | **English**
 
-**CoStaff Agent Template** is a starting point for building external agents on the [CoStaff](https://github.com/CoStaffAI/costaff) platform. It follows the same architecture as first-party agents (`costaff-coding-agent`, `costaff-viz-report-agent`) and is ready to deploy with Docker Compose or the CoStaff CLI.
+**CoStaff Database Agent** is a background specialist agent built on **Google ADK** and the **A2A protocol**. It connects to multiple databases simultaneously, auto-discovers schemas, executes SQL queries, and saves results to the shared workspace for downstream agents (such as the Business Analysis Agent or Coding Agent) to consume.
+
+> *"I query your databases and hand the data to whoever needs it."*
 
 ---
 
 ## Table of Contents
 
 - [How It Works](#how-it-works)
+- [Features](#features)
 - [Architecture](#architecture)
 - [Getting Started](#getting-started)
-- [Customisation Guide](#customisation-guide)
 - [Environment Variables](#environment-variables)
+- [Database Configuration](#database-configuration)
+- [MCP Tools](#mcp-tools)
 - [MCP Extensions](#mcp-extensions)
 - [costaff.agent.json](#costaffagentjson)
 - [License](#license)
@@ -33,33 +37,49 @@ CoStaff Agent
      │
      │  A2A Protocol (/.well-known/agent.json)
      ▼
-Template Agent  ──►  MCP Template Server  ──►  Your tools / data / APIs
+Database Agent  ──►  MCP Database Server  ──►  Your Databases (PostgreSQL, MySQL, SQLite…)
+                              │
+                              └──►  /app/data/workspace/  (CSV / JSON output)
 ```
 
-1. The CoStaff Agent delegates tasks via **A2A protocol**
-2. The agent reasons using its system prompt and calls tools via the **MCP server**
-3. Results are saved to a shared volume and returned to the calling agent
+The agent follows a one-shot execution model:
+
+1. **Receive** — CoStaff Agent delegates a data extraction or query task
+2. **Discover** — inspect available databases and their schemas automatically
+3. **Query** — execute SQL and retrieve results
+4. **Save** — write output to the shared workspace as CSV or JSON for other agents
+5. **Report** — return a summary to the calling agent
+
+---
+
+## Features
+
+- **Multi-database support** — connect to PostgreSQL, MySQL, SQLite, and any SQLAlchemy-compatible database simultaneously
+- **Schema auto-discovery** — lists tables, columns, and types without manual configuration
+- **SQL execution** — run arbitrary SELECT queries and export results
+- **Shared workspace output** — saves results as descriptively named CSV/JSON files accessible by all agents
+- **A2A-compatible** — exposes `/.well-known/agent.json` health endpoint at port 8081
+- **Dynamic MCP support** — additional MCP servers can be assigned at runtime from the CoStaff dashboard
+- **Multi-model support** — works with Google Gemini natively or any LiteLLM-compatible provider
 
 ---
 
 ## Architecture
 
 ```
-costaff-agent-template/
-├── agent/                        # ADK agent definition
-│   ├── agent.py                  # LlmAgent with dynamic MCP loading
-│   ├── agent_a2a.py              # A2A server entrypoint
-│   ├── requirements.txt
+costaff-agent-database/
+├── agent/
+│   ├── agent.py                           # LlmAgent with dynamic MCP loading
+│   ├── agent_a2a.py                       # A2A server entry point
 │   └── utils/
 │       └── instructions/
-│           └── agent_instruction.md   # System prompt (edit this)
-├── mcp/                          # MCP server
-│   ├── server.py                 # FastMCP server — add your tools here
-│   ├── requirements.txt
-│   └── Dockerfile
-├── docker-compose.yaml           # Standalone deployment
-├── costaff.agent.json           # CoStaff platform manifest
-└── .gitignore
+│           └── agent_instruction.md       # Agent system prompt
+├── mcp/
+│   ├── server.py                          # FastMCP server
+│   └── tools/
+│       └── db_operations.py              # Database tools (query, inspect, list)
+├── docker-compose.yaml
+└── costaff.agent.json
 ```
 
 ---
@@ -70,17 +90,20 @@ costaff-agent-template/
 
 - Docker and Docker Compose
 - Google Gemini API Key **or** LiteLLM-compatible provider
+- At least one database connection URL
 
 ### Standalone
 
 ```bash
-git clone https://github.com/CoStaffAI/costaff-agent-template.git
-cd costaff-agent-template
+git clone https://github.com/costaff-ai/costaff-database-agent.git
+cd costaff-database-agent
 
-# Set your API key
-export GOOGLE_API_KEY=your_key_here
+# Configure environment
+cat > .env <<EOF
+GOOGLE_API_KEY=your_key_here
+DATABASE_CONFIG={"prod_db": {"type": "postgresql", "url": "postgresql://user:pass@host/dbname", "desc": "Production database"}}
+EOF
 
-# Start
 docker compose up -d --build
 ```
 
@@ -89,95 +112,94 @@ The agent will be available at `http://localhost:8081`.
 ### Via CoStaff Platform
 
 ```bash
-cst agent deploy --local /path/to/your-agent
+cst agent deploy --local /path/to/costaff-database-agent
 ```
-
-CoStaff reads `costaff.agent.json`, builds and starts the containers, and registers the agent automatically.
-
----
-
-## Customisation Guide
-
-Search for all `TODO` comments across the project — each marks a decision point specific to your agent:
-
-### 1. Rename identifiers
-
-| Find | Replace with |
-|------|--------------|
-| `template_agent` | `your_agent_name` (snake_case, in Python files) |
-| `template-agent` | `your-agent-name` (kebab-case, in YAML / JSON) |
-| `mcp-template` | `mcp-your-agent` (kebab-case) |
-| `TEMPLATE_` | `YOUR_AGENT_` (SCREAMING_SNAKE_CASE, env var prefix) |
-| `template_data` | `your_agent_data` (Docker volume name) |
-
-### 2. Write your MCP tools (`mcp/server.py`)
-
-- Remove or rename the `example_*` tools
-- Add tools that give the agent access to the data, APIs, or capabilities it needs
-- Every tool must have a clear docstring — the LLM reads it to decide when to call the tool
-
-### 3. Write your system prompt (`agent/utils/instructions/agent_instruction.md`)
-
-- Replace the placeholder content with your agent's identity, role, and workflow
-- Reference your actual tool names in the Tool Usage Guide table
-
-### 4. Update manifests
-
-- `costaff.agent.json` — update `name`, `description`, env var names
-- `docker-compose.yaml` — update service names, env vars, volume name
 
 ---
 
 ## Environment Variables
 
 | Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
+|---|---|---|---|
 | `GOOGLE_API_KEY` | ✅ | — | Google Gemini API key |
-| `TEMPLATE_AGENT_MODEL` | ❌ | `gemini-2.5-flash` | Model name for Gemini provider |
+| `DATABASE_CONFIG` | ✅ | — | JSON object defining database connections (see below) |
+| `DATABASE_AGENT_MODEL` | ❌ | `gemini-2.5-flash` | Model name for Gemini provider |
 | `COSTAFF_AGENT_MODEL_PROVIDER` | ❌ | `gemini` | `gemini` or `litellm` |
 | `LITELLM_MODEL_NAME` | ❌ | — | Model name for LiteLLM provider |
 | `LITELLM_API_BASE` | ❌ | — | LiteLLM API base URL |
 | `LITELLM_API_KEY` | ❌ | — | LiteLLM API key |
-| `MCP_TEMPLATE_URL` | ❌ | `http://mcp-template:8082/sse` | Internal MCP server URL |
-| `TEMPLATE_WORKSPACE_DIR` | ❌ | `/app/data/workspace` | Shared data directory |
-| `TEMPLATE_AGENT_MCP_URLS` | ❌ | — | JSON dict of extra MCP servers |
+| `DATABASE_WORKSPACE_DIR` | ❌ | `/app/data/workspace` | Output directory for query results |
+| `DATABASE_AGENT_MCP_URLS` | ❌ | — | JSON dict of extra MCP servers |
+| `COSTAFF_PREFERRED_LANGUAGE` | ❌ | — | Language for agent responses |
+
+---
+
+## Database Configuration
+
+`DATABASE_CONFIG` is a JSON object where each key is a logical alias for the database:
+
+```json
+{
+  "analytics": {
+    "type": "postgresql",
+    "url": "postgresql://user:password@host:5432/analytics_db",
+    "desc": "Analytics data warehouse"
+  },
+  "app_db": {
+    "type": "mysql",
+    "url": "mysql+pymysql://user:password@host:3306/app",
+    "desc": "Main application database"
+  },
+  "local": {
+    "type": "sqlite",
+    "url": "sqlite:////app/data/local.db",
+    "desc": "Local SQLite database"
+  }
+}
+```
+
+Any [SQLAlchemy-supported dialect](https://docs.sqlalchemy.org/en/20/dialects/) can be used.
+
+---
+
+## MCP Tools
+
+| Tool | Description |
+|---|---|
+| `get_connected_databases()` | List all configured database aliases and their descriptions |
+| `inspect_database(db_alias)` | List all tables in the specified database |
+| `inspect_table(db_alias, table_name)` | Get schema (columns + types) and sample rows from a table |
+| `query(db_alias, sql, output_filename)` | Execute a SQL SELECT query and optionally save results to workspace |
 
 ---
 
 ## MCP Extensions
 
-Additional MCPs (databases, search APIs, internal tools) can be assigned dynamically from the **CoStaff dashboard** under `Agents → your-agent → MCP Extensions → Apply & Restart` — no redeployment needed.
-
-Extra MCPs are passed via the `TEMPLATE_AGENT_MCP_URLS` environment variable as a JSON dict:
+Additional MCPs can be assigned dynamically from the **CoStaff dashboard** under `Agents → database-agent → MCP Extensions → Apply & Restart`.
 
 ```json
 {
-  "my-db-mcp": {
-    "url": "https://my-db-mcp.internal/mcp",
-    "transport": "streamable",
+  "my-extra-mcp": {
+    "url": "https://my-mcp-server.internal/mcp",
     "headers": { "Authorization": "Bearer ..." }
   }
 }
 ```
 
-Supported transports: `sse` (URL contains `/sse`) and `streamable` (default).
-
 ---
 
 ## costaff.agent.json
 
-This manifest declares the agent's identity and capabilities to the CoStaff platform:
-
 ```json
 {
-  "name": "your-agent-name",
-  "version": "1.0.0",
-  "description": "One-sentence description of what this agent does.",
-  "a2a_service": "your-agent-name",
+  "name": "database-agent",
+  "version": "0.1.0",
+  "description": "資料庫管理專家，支援多種資料庫連線、自動探索 Schema 並執行跨庫查詢與分析。",
+  "a2a_service": "database-agent",
   "port": 8081,
-  "env_required": ["GOOGLE_API_KEY"],
+  "env_required": ["GOOGLE_API_KEY", "DATABASE_CONFIG"],
   "mcp_configurable": true,
-  "mcp_env_var": "YOUR_AGENT_MCP_URLS"
+  "mcp_env_var": "DATABASE_AGENT_MCP_URLS"
 }
 ```
 

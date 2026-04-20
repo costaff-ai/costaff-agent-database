@@ -67,6 +67,11 @@ def inspect_table(db_alias: str, table_name: str) -> str:
             for c in inspector.get_columns(table_name)
         ]
         
+        # Validate table_name against actual tables to prevent SQL injection
+        valid_tables = inspector.get_table_names()
+        if table_name not in valid_tables:
+            return json.dumps({"error": f"Table '{table_name}' not found in database '{db_alias}'"}, ensure_ascii=False)
+
         # Get sample rows
         with engine.connect() as conn:
             result = conn.execute(text(f"SELECT * FROM {table_name} LIMIT 3"))

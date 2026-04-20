@@ -1,65 +1,85 @@
-# CoStaff Agent Template
+# CoStaff 資料庫 Agent
 
 [![Python Version](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/)
 [![Google ADK](https://img.shields.io/badge/Google%20ADK-latest-orange.svg)](https://github.com/google/adk-python)
 [![MCP](https://img.shields.io/badge/MCP-enabled-green.svg)](https://modelcontextprotocol.io/)
 [![Docker](https://img.shields.io/badge/docker-supported-blue.svg)](https://www.docker.com/)
 [![A2A Protocol](https://img.shields.io/badge/A2A-protocol-violet.svg)](https://github.com/google/A2A)
-[![costaff.agent.json](https://img.shields.io/badge/costaff-compatible-blue.svg)](https://github.com/CoStaffAI/costaff)
+[![costaff.agent.json](https://img.shields.io/badge/costaff-compatible-blue.svg)](https://github.com/costaff-ai/costaff)
 
-**English** | [繁體中文](./README_zhtw.md)
+**[English](./README.md)** | 繁體中文
 
-**CoStaff Agent Template** 是在 [CoStaff](https://github.com/CoStaffAI/costaff) 平台上建立 external agent 的起始模板。它遵循與官方 first-party agents（`costaff-coding-agent`、`costaff-viz-report-agent`）相同的架構，可以直接用 Docker Compose 或 CoStaff CLI 部署。
+**CoStaff 資料庫 Agent** 是基於 **Google ADK** 與 **A2A 協議** 的後台專業子 Agent。它可同時連線多個資料庫，自動探索 Schema、執行 SQL 查詢，並將結果存入共享工作區，供後續 Agent（如 Business Analysis Agent 或 Coding Agent）使用。
+
+> *「我負責查詢你的資料庫，並將資料交給需要的人。」*
 
 ---
 
 ## 目錄
 
-- [運作原理](#運作原理)
+- [運作方式](#運作方式)
+- [功能特色](#功能特色)
 - [專案架構](#專案架構)
 - [快速開始](#快速開始)
-- [客製化指南](#客製化指南)
 - [環境變數](#環境變數)
+- [資料庫設定](#資料庫設定)
+- [MCP 工具](#mcp-工具)
 - [MCP 擴充](#mcp-擴充)
 - [costaff.agent.json](#costaffagentjson)
 - [授權](#授權)
 
 ---
 
-## 運作原理
+## 運作方式
 
 ```
 CoStaff Agent
      │
      │  A2A Protocol (/.well-known/agent.json)
      ▼
-Template Agent  ──►  MCP Template Server  ──►  你的工具 / 資料 / API
+資料庫 Agent  ──►  MCP 資料庫伺服器  ──►  您的資料庫（PostgreSQL、MySQL、SQLite…）
+                              │
+                              └──►  /app/data/workspace/（CSV / JSON 輸出）
 ```
 
-1. CoStaff Agent 透過 **A2A 協議** 委派任務
-2. Agent 根據 system prompt 推理，並透過 **MCP Server** 呼叫工具
-3. 結果儲存在共享 volume，並回傳給呼叫端 agent
+Agent 採用一次性執行模型：
+
+1. **接收** — CoStaff Agent 委派資料擷取或查詢任務
+2. **探索** — 自動檢查可用資料庫及其 Schema
+3. **查詢** — 執行 SQL 並取得結果
+4. **儲存** — 將輸出寫入共享工作區為 CSV 或 JSON，供其他 Agent 使用
+5. **回報** — 向呼叫端 Agent 回傳摘要
+
+---
+
+## 功能特色
+
+- **多資料庫支援** — 同時連線 PostgreSQL、MySQL、SQLite 及任何 SQLAlchemy 相容資料庫
+- **Schema 自動探索** — 無需手動設定，自動列出資料表、欄位與型別
+- **SQL 執行** — 執行任意 SELECT 查詢並匯出結果
+- **共享工作區輸出** — 以具描述性的檔名將結果儲存為 CSV/JSON，所有 Agent 皆可存取
+- **A2A 相容** — 在 8081 port 提供 `/.well-known/agent.json` 健康端點
+- **動態 MCP 支援** — 可從 CoStaff 後台在執行階段動態新增 MCP 伺服器
+- **多模型支援** — 原生支援 Google Gemini，或任何 LiteLLM 相容提供者
 
 ---
 
 ## 專案架構
 
 ```
-costaff-agent-template/
-├── agent/                        # ADK agent 定義
-│   ├── agent.py                  # LlmAgent，含動態 MCP 載入
-│   ├── agent_a2a.py              # A2A server 進入點
-│   ├── requirements.txt
+costaff-agent-database/
+├── agent/
+│   ├── agent.py                           # 含動態 MCP 載入的 LlmAgent
+│   ├── agent_a2a.py                       # A2A 伺服器入口
 │   └── utils/
 │       └── instructions/
-│           └── agent_instruction.md   # System prompt（主要編輯這裡）
-├── mcp/                          # MCP server
-│   ├── server.py                 # FastMCP server — 在這裡加入你的工具
-│   ├── requirements.txt
-│   └── Dockerfile
-├── docker-compose.yaml           # 獨立部署設定
-├── costaff.agent.json           # CoStaff 平台 manifest
-└── .gitignore
+│           └── agent_instruction.md       # Agent 系統提示詞
+├── mcp/
+│   ├── server.py                          # FastMCP 伺服器
+│   └── tools/
+│       └── db_operations.py              # 資料庫工具（查詢、檢查、列表）
+├── docker-compose.yaml
+└── costaff.agent.json
 ```
 
 ---
@@ -68,117 +88,118 @@ costaff-agent-template/
 
 ### 前置需求
 
-- Docker 和 Docker Compose
-- Google Gemini API Key **或** LiteLLM 相容的 provider
+- Docker 與 Docker Compose
+- Google Gemini API Key 或 LiteLLM 相容提供者
+- 至少一個資料庫連線 URL
 
 ### 獨立部署
 
 ```bash
-git clone https://github.com/CoStaffAI/costaff-agent-template.git
-cd costaff-agent-template
+git clone https://github.com/costaff-ai/costaff-database-agent.git
+cd costaff-database-agent
 
-# 設定 API Key
-export GOOGLE_API_KEY=your_key_here
+# 設定環境變數
+cat > .env <<EOF
+GOOGLE_API_KEY=your_key_here
+DATABASE_CONFIG={"prod_db": {"type": "postgresql", "url": "postgresql://user:pass@host/dbname", "desc": "正式資料庫"}}
+EOF
 
-# 啟動
 docker compose up -d --build
 ```
 
-Agent 將在 `http://localhost:8081` 提供服務。
+Agent 將可於 `http://localhost:8081` 存取。
 
 ### 透過 CoStaff 平台部署
 
 ```bash
-cst agent deploy --local /path/to/your-agent
+cst agent deploy --local /path/to/costaff-database-agent
 ```
-
-CoStaff 會讀取 `costaff.agent.json`，自動 build、啟動容器並註冊 agent。
-
----
-
-## 客製化指南
-
-在整個專案中搜尋所有 `TODO` 註解 — 每一個都標記了需要針對你的 agent 做決定的地方。
-
-### 1. 重新命名識別符
-
-| 搜尋 | 取代為 |
-|------|--------|
-| `template_agent` | `your_agent_name`（snake_case，Python 檔案） |
-| `template-agent` | `your-agent-name`（kebab-case，YAML / JSON） |
-| `mcp-template` | `mcp-your-agent`（kebab-case） |
-| `TEMPLATE_` | `YOUR_AGENT_`（SCREAMING_SNAKE_CASE，環境變數前綴） |
-| `template_data` | `your_agent_data`（Docker volume 名稱） |
-| `TODO: 這裡填寫 Agent 的中文顯示名稱` | `您的 Agent 中文稱呼`（用於主 Agent 識別） |
-
-### 2. 撰寫 MCP 工具（`mcp/server.py`）
-
-- 移除或重新命名 `example_*` 工具
-- 加入讓 agent 能存取所需資料、API 或能力的工具
-- 每個工具都必須有清晰的 docstring — LLM 靠它決定何時呼叫該工具
-
-### 3. 撰寫 system prompt（`agent/utils/instructions/agent_instruction.md`）
-
-- 用你的 agent 的身份、角色和工作流程取代佔位內容
-- 在工具使用指南表格中列出實際的工具名稱
-
-### 4. 更新 manifest 檔案
-
-- `costaff.agent.json` — 更新 `name`、`description`、環境變數名稱
-- `docker-compose.yaml` — 更新 service 名稱、環境變數、volume 名稱
 
 ---
 
 ## 環境變數
 
-| 變數 | 必填 | 預設值 | 說明 |
-|------|------|--------|------|
-| `GOOGLE_API_KEY` | ✅ | — | Google Gemini API key |
-| `TEMPLATE_AGENT_MODEL` | ❌ | `gemini-2.5-flash` | Gemini provider 的 model 名稱 |
+| 變數名稱 | 必填 | 預設值 | 說明 |
+|---|---|---|---|
+| `GOOGLE_API_KEY` | ✅ | — | Google Gemini API 金鑰 |
+| `DATABASE_CONFIG` | ✅ | — | 定義資料庫連線的 JSON 物件（見下方） |
+| `DATABASE_AGENT_MODEL` | ❌ | `gemini-2.5-flash` | Gemini 提供者的模型名稱 |
 | `COSTAFF_AGENT_MODEL_PROVIDER` | ❌ | `gemini` | `gemini` 或 `litellm` |
-| `LITELLM_MODEL_NAME` | ❌ | — | LiteLLM provider 的 model 名稱 |
-| `LITELLM_API_BASE` | ❌ | — | LiteLLM API base URL |
-| `LITELLM_API_KEY` | ❌ | — | LiteLLM API key |
-| `MCP_TEMPLATE_URL` | ❌ | `http://mcp-template:8082/sse` | 內部 MCP server URL |
-| `TEMPLATE_WORKSPACE_DIR` | ❌ | `/app/data/workspace` | 共享資料目錄 |
-| `TEMPLATE_AGENT_MCP_URLS` | ❌ | — | 額外 MCP servers 的 JSON dict |
+| `LITELLM_MODEL_NAME` | ❌ | — | LiteLLM 提供者的模型名稱 |
+| `LITELLM_API_BASE` | ❌ | — | LiteLLM API Base URL |
+| `LITELLM_API_KEY` | ❌ | — | LiteLLM API 金鑰 |
+| `DATABASE_WORKSPACE_DIR` | ❌ | `/app/data/workspace` | 查詢結果輸出目錄 |
+| `DATABASE_AGENT_MCP_URLS` | ❌ | — | 額外 MCP 伺服器的 JSON 字典 |
+| `COSTAFF_PREFERRED_LANGUAGE` | ❌ | — | Agent 回應語言 |
+
+---
+
+## 資料庫設定
+
+`DATABASE_CONFIG` 是一個 JSON 物件，每個 key 為資料庫的邏輯別名：
+
+```json
+{
+  "analytics": {
+    "type": "postgresql",
+    "url": "postgresql://user:password@host:5432/analytics_db",
+    "desc": "分析資料倉儲"
+  },
+  "app_db": {
+    "type": "mysql",
+    "url": "mysql+pymysql://user:password@host:3306/app",
+    "desc": "主應用程式資料庫"
+  },
+  "local": {
+    "type": "sqlite",
+    "url": "sqlite:////app/data/local.db",
+    "desc": "本地 SQLite 資料庫"
+  }
+}
+```
+
+支援任何 [SQLAlchemy 相容的資料庫方言](https://docs.sqlalchemy.org/en/20/dialects/)。
+
+---
+
+## MCP 工具
+
+| 工具 | 說明 |
+|---|---|
+| `get_connected_databases()` | 列出所有已設定的資料庫別名與描述 |
+| `inspect_database(db_alias)` | 列出指定資料庫的所有資料表 |
+| `inspect_table(db_alias, table_name)` | 取得資料表的 Schema（欄位與型別）及樣本資料 |
+| `query(db_alias, sql, output_filename)` | 執行 SQL SELECT 查詢，可選擇性地將結果存至工作區 |
 
 ---
 
 ## MCP 擴充
 
-額外的 MCP（資料庫、搜尋 API、內部工具）可以從 **CoStaff dashboard** 的 `Agents → your-agent → MCP Extensions → Apply & Restart` 動態指派，不需要重新部署。
-
-額外 MCP 透過 `TEMPLATE_AGENT_MCP_URLS` 環境變數以 JSON dict 傳入：
+可從 **CoStaff 後台** 的 `Agents → database-agent → MCP Extensions → Apply & Restart` 動態新增額外 MCP 伺服器，無需重新部署。
 
 ```json
 {
-  "my-db-mcp": {
-    "url": "https://my-db-mcp.internal/mcp",
-    "transport": "streamable",
+  "my-extra-mcp": {
+    "url": "https://my-mcp-server.internal/mcp",
     "headers": { "Authorization": "Bearer ..." }
   }
 }
 ```
 
-支援的 transport：`sse`（URL 含 `/sse`）和 `streamable`（預設）。
-
 ---
 
 ## costaff.agent.json
 
-此 manifest 宣告 agent 的身份和能力給 CoStaff 平台：
-
 ```json
 {
-  "name": "your-agent-name",
-  "version": "1.0.0",
-  "description": "一句話說明這個 agent 做什麼。",
-  "a2a_service": "your-agent-name",
+  "name": "database-agent",
+  "version": "0.1.0",
+  "description": "資料庫管理專家，支援多種資料庫連線、自動探索 Schema 並執行跨庫查詢與分析。",
+  "a2a_service": "database-agent",
   "port": 8081,
-  "env_required": ["GOOGLE_API_KEY"],
+  "env_required": ["GOOGLE_API_KEY", "DATABASE_CONFIG"],
   "mcp_configurable": true,
-  "mcp_env_var": "YOUR_AGENT_MCP_URLS"
+  "mcp_env_var": "DATABASE_AGENT_MCP_URLS"
 }
 ```
 
@@ -186,4 +207,4 @@ CoStaff 會讀取 `costaff.agent.json`，自動 build、啟動容器並註冊 ag
 
 ## 授權
 
-以 MIT License 發佈。詳見 `LICENSE`。
+依 MIT 授權條款發布。詳見 `LICENSE`。
