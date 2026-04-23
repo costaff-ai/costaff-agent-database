@@ -35,7 +35,7 @@
 ```
 CoStaff Agent
      │
-     │  A2A Protocol (/.well-known/agent.json)
+     │  A2A 協議 (/.well-known/agent-card.json)
      ▼
 資料庫 Agent  ──►  MCP 資料庫伺服器  ──►  您的資料庫（PostgreSQL、MySQL、SQLite…）
                               │
@@ -58,7 +58,7 @@ Agent 採用一次性執行模型：
 - **Schema 自動探索** — 無需手動設定，自動列出資料表、欄位與型別
 - **SQL 執行** — 執行任意 SELECT 查詢並匯出結果
 - **共享工作區輸出** — 以具描述性的檔名將結果儲存為 CSV/JSON，所有 Agent 皆可存取
-- **A2A 相容** — 在 8081 port 提供 `/.well-known/agent.json` 健康端點
+- **A2A 相容** — 在 8081 port 提供 `/.well-known/agent-card.json` 健康端點
 - **動態 MCP 支援** — 可從 CoStaff 後台在執行階段動態新增 MCP 伺服器
 - **多模型支援** — 原生支援 Google Gemini，或任何 LiteLLM 相容提供者
 

@@ -85,5 +85,5 @@ database_agent = LlmAgent(
     description="A database management specialist that can query multiple databases and automate data extraction.",
     instruction=instruction,
     tools=tools,
-    sub_agents=sub_agents if sub_agents else None,
+    sub_agents=sub_agents,
 )

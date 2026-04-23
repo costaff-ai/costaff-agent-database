@@ -4,6 +4,8 @@ services:
       context: ./agent
     container_name: costaff-agent-database
     restart: on-failure
+    ports:
+      - "8081:8081"
     environment:
       - PORT=8081
       - PUBLIC_HOST=costaff-agent-database

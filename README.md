@@ -35,7 +35,7 @@
 ```
 CoStaff Agent
      │
-     │  A2A Protocol (/.well-known/agent.json)
+     │  A2A Protocol (/.well-known/agent-card.json)
      ▼
 Database Agent  ──►  MCP Database Server  ──►  Your Databases (PostgreSQL, MySQL, SQLite…)
                               │
@@ -58,7 +58,7 @@ The agent follows a one-shot execution model:
 - **Schema auto-discovery** — lists tables, columns, and types without manual configuration
 - **SQL execution** — run arbitrary SELECT queries and export results
 - **Shared workspace output** — saves results as descriptively named CSV/JSON files accessible by all agents
-- **A2A-compatible** — exposes `/.well-known/agent.json` health endpoint at port 8081
+- **A2A-compatible** — exposes `/.well-known/agent-card.json` health endpoint at port 8081
 - **Dynamic MCP support** — additional MCP servers can be assigned at runtime from the CoStaff dashboard
 - **Multi-model support** — works with Google Gemini natively or any LiteLLM-compatible provider
 
