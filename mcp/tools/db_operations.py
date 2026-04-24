@@ -15,6 +15,9 @@ def _get_db_config():
 def _workspace():
     return os.getenv("WORKSPACE_DIR", "/app/data/costaff-agent-database")
 
+def _shared_workspace():
+    return os.getenv("COSTAFF_SHARED_DIR_DATABASE", "/app/data/shared/costaff-agent-database")
+
 def get_connected_databases() -> str:
     """
     Returns a list of all connected database aliases and their descriptions.
@@ -100,10 +103,10 @@ def query(db_alias: str, sql: str, output_filename: str = None) -> str:
         df = pd.read_sql(text(sql), engine)
         
         if output_filename:
-            os.makedirs(_workspace(), exist_ok=True)
-            path = Path(_workspace()) / output_filename
+            os.makedirs(_shared_workspace(), exist_ok=True)
+            path = Path(_shared_workspace()) / output_filename
             df.to_csv(path, index=False)
-            return f"Success: Query results saved to {output_filename}"
+            return f"Success: Query results saved to {str(path)}"
         
         # Limit JSON return to prevent context overflow
         result_subset = df.head(100).to_dict(orient="records")
