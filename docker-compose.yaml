@@ -10,16 +10,18 @@ services:
       - PORT=8081
       - PUBLIC_HOST=costaff-agent-database
       - MCP_DATABASE_URL=http://costaff-mcp-database:8082/mcp
+      # Plan B workspace env vars (injected by CoStaff CLI at deploy time)
       - WORKSPACE_DIR=/app/data
-      - AGENT_DATABASE_WORKSPACE_DIR=/app/data/agent-database
+      - SHARED_DIR=/app/data/shared
+      - COSTAFF_SHARED_DIR_DATABASE=/app/data/shared/costaff-agent-database
+      - AGENT_WORKSPACE_DIR_DATABASE=/app/data
       - COSTAFF_AGENT_MODEL_PROVIDER=${COSTAFF_AGENT_MODEL_PROVIDER:-gemini}
       - DATABASE_AGENT_MODEL=${DATABASE_AGENT_MODEL:-gemini-2.5-flash}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - LITELLM_MODEL_NAME=${LITELLM_MODEL_NAME:-}
       - LITELLM_API_BASE=${LITELLM_API_BASE:-}
       - LITELLM_API_KEY=${LITELLM_API_KEY:-}
-    volumes:
-      - costaff_data:/app/data
+    # Note: actual bind mounts are injected by the CoStaff CLI in compose-fragment.yaml
     depends_on:
       - costaff-mcp-database
 
@@ -31,11 +33,8 @@ services:
     environment:
       - MCP_DATABASE_PORT=8082
       - WORKSPACE_DIR=/app/data
-      - AGENT_DATABASE_WORKSPACE_DIR=/app/data/agent-database
+      - SHARED_DIR=/app/data/shared
+      - COSTAFF_SHARED_DIR_DATABASE=/app/data/shared/costaff-agent-database
+      - AGENT_WORKSPACE_DIR_DATABASE=/app/data
       - DATABASE_CONFIG=${DATABASE_CONFIG}
-    volumes:
-      - costaff_data:/app/data
-
-volumes:
-  costaff_data:
-    name: costaff_data
+    # Note: actual bind mounts are injected by the CoStaff CLI in compose-fragment.yaml
