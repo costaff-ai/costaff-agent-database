@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from google.adk.agents import LlmAgent
+from google.adk.skills import load_skill_from_dir
+from google.adk.tools import skill_toolset
 from google.adk.tools.mcp_tool import McpToolset
 from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPServerParams
 from utils.instructions import AGENT_INSTRUCTION
@@ -19,9 +21,18 @@ from utils.instructions import AGENT_INSTRUCTION
 # Workspace for DB results
 WORKSPACE_DIR = os.getenv("WORKSPACE_DIR", "/app/data/costaff-agent-database")
 
+# Skills auto-discovery
+_skills_dir = Path(__file__).parent / "utils" / "skills"
+_skills = [
+    load_skill_from_dir(d)
+    for d in sorted(_skills_dir.iterdir())
+    if d.is_dir() and (d / "SKILL.md").exists()
+] if _skills_dir.exists() else []
+logger.info(f"Loaded {len(_skills)} skill(s)")
+
 # Connect to own MCP
 MCP_DATABASE_URL = os.getenv("MCP_DATABASE_URL", "http://costaff-mcp-database:8082/mcp")
-tools = [McpToolset(connection_params=StreamableHTTPServerParams(url=MCP_DATABASE_URL))]
+tools = [McpToolset(connection_params=StreamableHTTPServerParams(url=MCP_DATABASE_URL)), skill_toolset.SkillToolset(skills=_skills)]
 logger.info(f"Database MCP URL: {MCP_DATABASE_URL}")
 
 # Additional MCPs (configured via Dashboard)

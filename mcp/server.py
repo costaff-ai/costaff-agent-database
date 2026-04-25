@@ -10,6 +10,13 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("mcp-database")
 
 sys.path.insert(0, str(Path(__file__).parent))
+# Allow tool files to import from each other (e.g. `from _shared import ...`)
+# WARNING: This also puts tools/ at the TOP of Python's module search path.
+# NEVER name a tool file the same as an installed package — it will shadow it and
+# crash the server at startup (e.g. dotenv.py shadows python-dotenv).
+# Dangerous names: dotenv.py, json.py, os.py, re.py, logging.py, requests.py
+# Safe pattern: describe the CATEGORY, not the library → env_file.py, http_client.py
+sys.path.insert(0, str(Path(__file__).parent / "tools"))
 
 WORKSPACE = os.getenv("WORKSPACE_DIR", "/app/data/costaff-agent-database")
 os.makedirs(WORKSPACE, exist_ok=True)
