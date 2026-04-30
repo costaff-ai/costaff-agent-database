@@ -28,4 +28,10 @@ database_agent = LlmAgent(
     instruction=instruction,
     tools=tools,
     sub_agents=sub_agents,
+    # A2A leaf default: A2A response auto-returns control to the manager.
+    # Disabling parent/peer transfer drops ADK to SingleFlow when
+    # `sub_agents` is empty, omitting the transfer-to-agent system prompt
+    # so Gemini cannot hallucinate `transfer_to_agent` and crash the run.
+    disallow_transfer_to_parent=True,
+    disallow_transfer_to_peers=True,
 )
