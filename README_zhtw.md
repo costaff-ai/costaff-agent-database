@@ -207,4 +207,4 @@ cst agent deploy --local /path/to/costaff-agent-database
 
 ## 授權
 
-依 MIT 授權條款發布。詳見 `LICENSE`。
+依 Apache 2.0 授權條款發布。詳見 `LICENSE`。
