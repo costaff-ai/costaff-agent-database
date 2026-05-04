@@ -1,4 +1,5 @@
 {
+  "protocol_version": "1.0",
   "name": "costaff-agent-database",
   "version": "0.1.0",
   "description": "[專長] 資料庫管理與跨庫分析。[能力] 支援多種資料庫連線、自動探索 Schema 並執行跨庫查詢與分析。[限制] 僅負責數據提取與結構化結果，不負責數據視覺化排版或報告製作。[產出] 結構化查詢結果 (JSON/CSV)。",
