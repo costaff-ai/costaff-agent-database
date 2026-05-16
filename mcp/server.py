@@ -50,5 +50,10 @@ _register_tools(mcp)
 
 
 if __name__ == "__main__":
-    logger.info(f"Starting Database MCP server (transport=streamable-http, workspace={WORKSPACE})")
-    mcp.run(transport="streamable-http")
+    # Transport env-selectable. Default SSE: race-free under to_a2a()+
+    # ADK1.33 (streamable-http anyio CancelScope race #4454 does NOT
+    # occur on SSE). MCP_TRANSPORT=streamable-http to switch back once
+    # ADK fixes #4454.
+    _t = os.getenv("MCP_TRANSPORT", "sse")
+    logger.info(f"Starting Database MCP server (transport={_t}, workspace={WORKSPACE})")
+    mcp.run(transport=_t)
