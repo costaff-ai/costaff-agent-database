@@ -9,10 +9,12 @@ from instruction import build_instruction
 from mcp_toolsets import load_all_mcp_toolsets
 from models import selected_model
 from skills import load_all_skills
+from tools import load_costaff_api_tools
 from sub_agents import load_all_sub_agents
 
 # Tools = MCP toolsets + Skill toolset
 tools = list(load_all_mcp_toolsets())
+tools.extend(load_costaff_api_tools())
 tools.append(load_all_skills())
 
 # Sub-agents (file-based discovery from sub_agents/ folder)

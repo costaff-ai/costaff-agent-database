@@ -1,16 +1,23 @@
-"""MCP toolset loader for the database agent.
+"""MCP toolset loader for the Database agent — SINGLE own McpToolset.
 
-Loads:
-    1. The agent's own MCP server (URL from MCP_DATABASE_URL env var,
-       defaults to costaff-mcp-database:8082).
-    2. Any extra MCP servers configured via DATABASE_AGENT_MCP_URLS
-       (set by the CoStaff dashboard at deploy time).
+The agent connects to its OWN MCP server (costaff-mcp-database:8082) via exactly
+ONE McpToolset. The 4 shared manager-core tools (send_message_now /
+add_task_comment / move_to_shared / list_data_files) are NOT loaded
+here — they go via the costaff-core httpx shim (agent/tools/
+costaff_api.py).
 
-Usage:
-    from mcp_toolsets import load_all_mcp_toolsets
-    toolsets = load_all_mcp_toolsets()  # list of McpToolset
+WHY single session: the anyio MCP cancel-scope race
+(google/adk-python#4454) is driven by the NUMBER OF CONCURRENT MCP
+sessions per agent process, not the transport. Exactly ONE McpToolset
++ shared-tools-via-shim is race-free under to_a2a() even on
+streamable-http (verified 2026-05-17). The old extra-MCP loop
+(MCP_DATABASE_URL-style multi-server loading) is intentionally removed: every
+extra entry was a 2nd+ concurrent session and the direct cause of the
+race. Do NOT reintroduce it.
+
+Transport: MCP_TRANSPORT (default streamable-http; set sse as the
+fallback if a high-concurrency edge ever leaks).
 """
-import json
 import logging
 import os
 import re
@@ -28,13 +35,7 @@ DEFAULT_MCP_URL = "http://costaff-mcp-database:8082/mcp"
 
 
 def _server_params(url, headers=None):
-    """ServerParams with transport chosen by MCP_TRANSPORT (default streamable-http).
-
-    SSE is race-free under to_a2a()+ADK1.33 (the streamable-http anyio
-    CancelScope race #4454 does NOT occur on SSE). The URL /mcp|/sse
-    suffix is normalised to match. MCP_TRANSPORT=streamable-http to
-    switch back once ADK fixes #4454.
-    """
+    """ServerParams with transport chosen by MCP_TRANSPORT (default streamable-http)."""
     t = os.getenv("MCP_TRANSPORT", "streamable-http").strip().lower()
     base = re.sub(r"/(mcp|sse)/?$", "", (url or "").rstrip("/"))
     if t == "streamable-http":
@@ -42,52 +43,12 @@ def _server_params(url, headers=None):
     return SseConnectionParams(url=base + "/sse", headers=headers or {})
 
 
-def _connection_params(entry):
-    """Coerce an entry (string URL or dict) into transport-correct ServerParams."""
-    if isinstance(entry, str):
-        url, headers = entry, None
-    else:
-        url = entry.get("url", "")
-        headers = entry.get("headers") or None
-    if not url:
-        raise ValueError("MCP entry has no URL")
-    return _server_params(url, headers)
-
-
 def load_all_mcp_toolsets() -> List[McpToolset]:
-    """Build the agent's MCP toolset list from env configuration."""
-    toolsets: List[McpToolset] = []
-
-    # Own MCP — always connected
+    """Return [own-MCP McpToolset] — exactly one session, no extra loop."""
     own_url = os.getenv("MCP_DATABASE_URL", DEFAULT_MCP_URL)
-    _op = _server_params(own_url)
-    toolsets.append(McpToolset(connection_params=_op))
-    logger.info(f"Database MCP: {_op.url} (transport={os.getenv('MCP_TRANSPORT','streamable-http')})")
-
-    # Extra MCPs from CoStaff dashboard
-    raw_extra = os.getenv("DATABASE_AGENT_MCP_URLS", "")
-    if raw_extra:
-        try:
-            extra_config = json.loads(raw_extra)
-        except json.JSONDecodeError:
-            logger.error("DATABASE_AGENT_MCP_URLS is not valid JSON, skipping extra MCPs")
-            return toolsets
-
-        for name, entry in extra_config.items():
-            if isinstance(entry, dict) and not entry.get("enabled", True):
-                logger.info(f"Skipping disabled extra MCP: {name}")
-                continue
-            tool_filter = entry.get("tool_filter") if isinstance(entry, dict) else None
-            try:
-                toolsets.append(McpToolset(
-                    connection_params=_connection_params(entry),
-                    tool_filter=tool_filter,
-                ))
-                if tool_filter:
-                    logger.info(f"Added extra MCP: {name} (filtered to {len(tool_filter)} tools: {tool_filter})")
-                else:
-                    logger.info(f"Added extra MCP: {name} (no filter — all tools imported)")
-            except Exception as e:
-                logger.error(f"Failed to load extra MCP '{name}': {e}")
-
-    return toolsets
+    params = _server_params(own_url)
+    logger.info(
+        f"Database MCP (single session): {params.url} "
+        f"(transport={os.getenv('MCP_TRANSPORT', 'streamable-http')})"
+    )
+    return [McpToolset(connection_params=params)]
